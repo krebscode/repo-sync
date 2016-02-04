@@ -1,30 +1,63 @@
 #! /usr/bin/env python3
-import pygit2
+from git import Repo
+import git
+
 cfg = {
-    "makefu-master": {
-        "remote":  {
-            "url" : "http://cgit.gum/stockholm.git"
+    "makefu": {
+        "origin":  {
+            "url" : "http://cgit.gum/stockholm"
             # optional, always use master
             # "ref" : "heads/master"
         },
         "mirror": {
-            "url": "ssh://git@localhost:stockholm-mirror"
+            "url": "git@wolf:stockholm-mirror"
             # optional, use name as branch
             # "ref": "heads/lass-master"
         }
+    },
+    "tv": {
+        "origin":  {
+            "url" : "http://cgit.cd/stockholm"
+        },
+        "mirror": {
+            "url": "git@wolf:stockholm-mirror"
+        }
     }
+#    "lassulus": {
+#        "origin":  {
+#            "url" : "http://cgit.cloudkrebs/stockholm"
+#        },
+#        "mirror": {
+#            "url": "ssh://git@wolf:stockholm-mirror"
+#        }
+#    }
 }
 
-pygit2.init_repository('lolgit', True)
-repo = pygit2.Repository('lolgit')
-for k,v in cfg.items():
-    try: repo.remotes.delete(k)
-    except KeyError: pass
 
-    remote_refspec = "refs/" + v['remote']['ref'] if 'ref' in v['remote'] \
+repo = Repo.init('lolgit',bare=True)
+for k,v in cfg.items():
+    # import pdb;pdb.set_trace()
+    oname = k
+    mname = oname+'-mirror'
+    ourl = v['origin']['url']
+    murl = v['mirror']['url']
+    try: repo.delete_remote(oname)
+    except git.exc.GitCommandError: pass
+
+    try: repo.delete_remote(mname)
+    except git.exc.GitCommandError: pass
+
+    remote_ref = "refs/" + v['origin']['ref'] if 'ref' in v['origin'] \
             else 'refs/heads/master'
-    refspec = "+{}:refs/remotes/{}/master".format(remote_refspec,k)
-    repo.remotes.create(k,v['remote']['url'],refspec)
-    ret = repo.remotes[k].fetch()
-    print(ret)
+    local_ref = "refs/remotes/{}/master".format(oname)
+    refspec = "+{}:{}".format(remote_ref,local_ref)
+    oremote = repo.create_remote(oname,url=ourl)
+    oremote.fetch(refspec=refspec)
+    # finish fetching
+
+    mremote = repo.create_remote(mname,murl)
+    mirror_ref = "refs/heads/{}".format(oname)
+    mrefspec = "{}:{}".format(local_ref,mirror_ref)
+    push = mremote.push(refspec=mrefspec,force=True)
+
     # print(k,v)
