@@ -44,6 +44,7 @@ import git
 from docopt import docopt
 import logging
 import os
+from datetime import datetime
 logging.basicConfig(level=logging.INFO)
 log = logging.getLogger("repo-sync")
 
@@ -73,7 +74,8 @@ def sync_ref(repo,k,v):
     refspec = "+{}:{}".format(remote_ref,local_ref)
     oremote = repo.create_remote(oname,url=ourl)
     log.info("fetching refspec {}".format(refspec))
-    oremote.fetch(refspec=refspec)
+    fetch = oremote.fetch(refspec=refspec)[0]
+    print("{} - {}".format(fetch.commit.summary,datetime.fromtimestamp(fetch.commit.committed_date)))
 
     mremote = repo.create_remote(mname,murl)
 
@@ -114,6 +116,7 @@ def get_latest_change(repo,sync):
     """
     last_change = sorted(sync,key=lambda k:
             git.objects.base.Object.new(repo,sync[k]['local_ref']).committed_date).pop()
+    log.info("latest change seen in: {}".format(last_change))
     return sync[last_change]['local_ref']
 
 
