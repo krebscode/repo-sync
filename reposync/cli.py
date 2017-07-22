@@ -131,7 +131,7 @@ def mirror(reponame,cfg):
         try:
             sync[k] = sync_ref(repo,k,v)
         except Exception as e:
-            log.error("failed to sync repo {}".format(k))
+            log.error("failed to sync repo {} because of {}".format(k,e))
 
     if lk in cfg:
         log.info("found `latest` entry, starting push")
